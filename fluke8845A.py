@@ -6,7 +6,7 @@ import time
 
 # NOTE: You need to look up which COM port the fluke 8845A is connected to
 # For mine it was COM4, replace below with it.
-settings = {'port': 'COM4', 'baudrate':38400, 'timeout':5, 'parity':serial.PARITY_EVEN, 'stopbits':serial.STOPBITS_TWO, 'bytesize':serial.SEVENBITS}
+settings = {'port': 'COM3', 'baudrate':38400, 'timeout':5, 'parity':serial.PARITY_EVEN, 'stopbits':serial.STOPBITS_TWO, 'bytesize':serial.SEVENBITS}
 
 def SARCommand(line: serial.serialwin32.Serial, command,default_wait_time=0.05, ending=b'\r\n', should_halt=False)->str:
     """Sends and recieves data along the RS232 line.
