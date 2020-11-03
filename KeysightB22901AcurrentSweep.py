@@ -5,5 +5,8 @@ RM.list_resources()
 SMU = RM.open_resource('<name of keysight b2901a>')
 SMU.write(":curr:mode sweep; start 0; stop 2; step 0.05")
 #sets the current source to be in sweep mode from 0-2A in 0.05A steps
-SMU.write(":puls:del 1E-05; widt 1E-05")
-#sets pulse width of source output and delay to be 10 us. not sure yet if this will work with the sweep steps.
+SMU.write(":func:puls; :puls:del 5E-05; widt 5E-05")
+#sets pulse width of source output and delay to be 50 us, which is pulse width lower limit
+SMU.write(':sens:func:off curr; :sens:rem on; :sens:wait off')
+#turns off current sensing (which is on by default), turns on remote sensing (required for 4 wire setup)
+#disables wait time of measurement, so it begins when triggered
