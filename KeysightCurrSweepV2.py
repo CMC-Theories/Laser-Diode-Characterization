@@ -9,12 +9,12 @@ SMU.write('sour:curr:mode sweep')                                 #sets source o
 SMU.write('sour:curr:star 0')                                     #sets curr sweep start to 0 A
 SMU.write('sour:curr:stop 2')                                     #sets curr sweep max to 2 A
 SMU.write('sour:curr:step 0.05')                                  #sweeps by 0.05 A steps
-SMU.write('puls:del 1E-03')                                       #pulse delay to 1 ms
+SMU.write('puls:del 1E-04')                                       #pulse delay to 0.1 ms
 SMU.write('puls:widt 1E-04')                                      #pulse width to 0.1 ms  
-SMU.write('sens:volt:aper 1E-04')                                 #sensor reading integration @ 0.1 ms
+SMU.write('sens:volt:aper 1E-04')                                 #sensor measurement integration @ 0.1 ms
 SMU.write('sens:volt:auto on')                                    #sensor volt range to auto
 SMU.write('sens:rem on')                                          #enables remote sensing
-SMU.write('form:elem:sens curr, time, sour')                      #data format for output
+SMU.write('form:elem:sens volt, curr, time')                      #data format for output
 SMU.write('trac:feed sens')                                       #save data to trace buffer
 SMU.write('outp:filt off')                                        #disables lowpass filter of output
 SMU.write('outp:off:auto on')                                     #allows output to turn off after sweep
