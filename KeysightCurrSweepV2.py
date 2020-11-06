@@ -23,18 +23,58 @@ def setCurRead(val):
     SMU.write('sour:curr ' + str(val))
     SMU.write('init (@1)')
     return SMU.query('fetc:arr?')
-ind = np.linspace(0,2,100)
+"""ind = np.linspace(0,2,100)
 iv = ind*ind*ind/4
 for k,v in enumerate(iv):
     values[k] = setCurRead(v)
+"""
+low = 0
+high = 2.0
+measured = {}
+
+def measure(x):
+    # do actual measurement here, instead we are doing sin(x)/(x+.00001)
+    combS = setCurRead(x).strip()
+    combSep = combS.split(',')
+    return float(combSep[0])
+    
+
+def step(low, high, threshold=0.00001, min_delta = 10**-8):
+    if high - low <= min_delta:
+        return
+    if low not in measured:
+        yl = measure(low)
+        measured[low] = yl
+    else:
+        yl = measured[low]
+    if high not in measured:
+        yh = measure(high)
+        measured[high] = yh
+    else:
+        yh = measured[high]
+    mp = (low + high)/2
+    if mp not in measured:
+        y = measure(mp)
+        measured[mp] = y
+    else:
+        y = measured[mp]
+    if abs(y - yl) > threshold:
+        step(low, mp)
+    if abs(y - yh) > threshold:
+        step(mp, high)
+step(low, high)
+
 
 SMU.write('outp off')
-values = np.array(values)
+"""values = np.array(values)
 np.savetxt('VoltCurrMeas.csv', values,fmt = '%s', delimiter=',', newline = '\n')
 mydata = np.genfromtxt('VoltCurrMeas.csv', delimiter=',')
 voltage = mydata[:,0]
 current = mydata[:,1]
-
+"""
+print(len(measured))
+voltage = list(measured.keys())
+current = [measured[i] for i in voltage]
 fitter = modeling.fitting.LevMarLSQFitter()
 model = modeling.models.Gaussian1D()
 fitted_model = fitter(model, voltage, current)
