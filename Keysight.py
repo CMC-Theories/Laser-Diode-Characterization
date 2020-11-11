@@ -2,7 +2,7 @@ import pyvisa
 class Keysight:
     def __init__(self, resource_name: str, initialize_w_def: bool, pyvisaRM):
         self.RM = pyvisaRM
-        self.line = self.RM(resource_name)
+        self.line = self.RM.open_resource(resource_name)
         if initialize_w_def:
             self.line.write("*RST")                                                  #Resets all system settings to default
             self.line.write("syst:lfr 60")                                           #Sets Power line frequency to 60 Hz

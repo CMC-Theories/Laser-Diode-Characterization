@@ -15,13 +15,13 @@ keysight = Keysight('USB0::0x0957::0x8B18::MY51143520::INSTR', True, RM)
 
 keysight.SAR(["outp on","init (@1)"],[])
 
-def readFunc(in):
-    return keysight.SASR(["sour:curr " + str(in), "init (@1)"],"fetc:arr?")
-def measure(in):
-    combS = readFunc(x).strip()
+def readFunc(inp):
+    return keysight.SASR(["sour:curr " + str(inp), "init (@1)"],"fetc:arr?")
+def measure(inp):
+    combS = readFunc(inp).strip()
     combSep = combS.split(',')
     return float(combSep[0])
-def step(low, high, measured_values: dict = {}, func: function = measure, threshold=0.00001, min_delta = 10**-8):
+def step(low, high, measured_values: dict = {}, func = measure, threshold=0.001, min_delta = 10**-8):
     """Recursively samples the low and high points of the system, if
     the difference between the output is more than the threshold, it will
     sample the midpoint, and then recurse with the midpoint to the low and high
@@ -69,8 +69,9 @@ dic = step(low, high, dic) # Note, stores all values in global measured value...
 keysight.SAR(["outp off"],[])
 
 print("Number of values measured: " + str(len(dic)))
-voltage = list(dic.keys())
-current = [dic[i] for i in voltage]
+current = list(dic.keys())
+current.sort()
+voltage = [dic[i] for i in current]
 fitter = modeling.fitting.LevMarLSQFitter()
 model = modeling.models.Gaussian1D()
 fitted_model = fitter(model, voltage, current)
@@ -82,3 +83,4 @@ plt.ylabel('Current (A)')
 plt.title('I-V Curve of Diode at 20 Deg C')
 plt.legend()
 plt.show()
+
