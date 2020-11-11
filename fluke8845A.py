@@ -4,6 +4,7 @@
 import serial
 import time
 
+
 # NOTE: You need to look up which COM port the fluke 8845A is connected to
 # For mine it was COM4, replace below with it.
 settings = {'port': 'COM3', 'baudrate':38400, 'timeout':5, 'parity':serial.PARITY_EVEN, 'stopbits':serial.STOPBITS_TWO, 'bytesize':serial.SEVENBITS}
@@ -60,22 +61,22 @@ def SACRCommand(line: serial.serialwin32.Serial, command: str, wait_for_timeout 
 ser = serial.Serial(**settings)
 
 SARCommand(ser, "*cls") # Clear all errors
-SARCommand(ser, "conf:volt:dc 0.1")
-SARCommand(ser, "volt:dc:nplc 0.02")
-SARCommand(ser, "zero:auto 0")
-SARCommand(ser, "trig:sour imm")
-SARCommand(ser, "trig:del 0")
-SARCommand(ser, "trig:coun 1")
-SARCommand(ser, "disp off")
+SARCommand(ser, "conf:volt:dc 0.1") # Set DC range to manual at 100mV
+SARCommand(ser, "volt:dc:nplc 0.02") # Set NPLC to faster reading rate at 4 1/2 digits???
+SARCommand(ser, "zero:auto 0") # Turns off autozero
+SARCommand(ser, "trig:sour imm") # Set the trigger to immediate
+SARCommand(ser, "trig:del 0") # Trigger delay is 0 (fast read)
+SARCommand(ser, "trig:coun 1") # Set trigger count to one
+SARCommand(ser, "disp off") # Turns off displace for faster reading
 SARCommand(ser, "syst:rem") # Set the system to remote mode
-SARCommand(ser, "samp:coun 5", default_wait_time=0.1) # Set the sample count to 100??????
-SARCommand(ser, ":INIT")
-while "1" not in SARCommand(ser, "*OPC?"):
+SARCommand(ser, "samp:coun 5", default_wait_time=0.1) # Set the sample count to 5
+SARCommand(ser, ":INIT") # Inits the machine
+while "1" not in SARCommand(ser, "*OPC?"): # Check if measurements have been taken
     print("Waiting...")
     time.sleep(0.1)
 
-print(SACRCommand(ser, ":FETCH?", wait_for_timeout=0.2, default_wait_time=0.2,should_halt=True)) # gets 1 measurement.
-SARCommand(ser, 'syst:loc', default_wait_time=0.2) # Sets the system to local mode
-SARCommand(ser, "disp on", default_wait_time=0.2)
+print(SACRCommand(ser, ":FETCH?", wait_for_timeout=0.2, default_wait_time=0.2,should_halt=True)) # gets all measurements
+SARCommand(ser, 'syst:loc', default_wait_time=0.2) # Sets the system to local mode again
+SARCommand(ser, "disp on", default_wait_time=0.2) # Turns on displays
 SARCommand(ser, "*cls", default_wait_time=0.1) # Clear all errors
 ser.close()
