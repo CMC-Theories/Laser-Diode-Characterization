@@ -5,20 +5,20 @@ from astropy import modeling
 
 RM = pyvisa.ResourceManager()
 RM.list_resources()
-SMU = RM.open_resource('USB0::0x0957::0x8B18::MY51143520::INSTR')
-SMU.write("*RST")
-SMU.write("syst:lfr 60")
-SMU.write('sour:func:mode curr')
-SMU.write('sour:func:shap puls')
-SMU.write('sour:puls:del 1E-04')
-SMU.write('sour:puls:widt 1E-04')
-SMU.write('sour:curr 0.0')
-SMU.write('sens:rem on')
-SMU.write('sens:volt:prot:pos 5')
-SMU.write('form:elem:sens volt, curr')
+SMU = RM.open_resource('USB0::0x0957::0x8B18::MY51143520::INSTR')  #Note: resource name could be different, adjust here.
+SMU.write("*RST")                                                  #Resets all system settings to default
+SMU.write("syst:lfr 60")                                           #Sets Power line frequency to 60 Hz
+SMU.write('sour:func:mode curr')                                   #Source output to current
+SMU.write('sour:func:shap puls')                                   #Source function to pulse
+SMU.write('sour:puls:del 1E-04')                                   #Pulse delay of 100 us
+SMU.write('sour:puls:widt 1E-04')                                  #Pulse width of 100 us
+SMU.write('sour:curr 0.0')                                         #Zeros initial current value
+SMU.write('sens:rem on')                                           #Remote sensing on
+SMU.write('sens:volt:prot:pos 5')                                  #Maximum voltage read set to 5 V
+SMU.write('form:elem:sens volt, curr')                             #Orders output data as Voltage, Current
 values = [0 for i in range(100)]
-SMU.write('outp on')
-SMU.write('init (@1)')
+SMU.write('outp on')                                               #Turns on the output
+SMU.write('init (@1)')                                             #Triggers current settings
 
 
 def setCurRead(val):
