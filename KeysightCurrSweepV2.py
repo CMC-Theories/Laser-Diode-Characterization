@@ -47,9 +47,8 @@ def measure(x):
     combS = setCurRead(x).strip()
     combSep = combS.split(',')
     return float(combSep[0])
-    
 
-def step(low, high, threshold=0.00001, min_delta = 10**-8):
+def step(low, high, measured_values: dict = {}, func: function = measure, threshold=0.00001, min_delta = 10**-8):
     """Recursively samples the low and high points of the system, if
     the difference between the output is more than the threshold, it will
     sample the midpoint, and then recurse with the midpoint to the low and high
@@ -59,32 +58,35 @@ def step(low, high, threshold=0.00001, min_delta = 10**-8):
     Args:
         low (float): Low x to sample
         high (float): High x to sample
-        threshold (float, optional): Minimum Difference between y_i and y_i+1 for the system to recursively visit the midpoint . Defaults to 0.00001.
-        min_delta ([type], optional): Minimum delta between x_i and x_i+1 before the system halts. Defaults to 10**-8.
+        measured_values (dict, optional): Dictionary for measured values to be placed into, keys are currents and values are voltages. Defaults to an empty dictionary.
+        func (function, optional): Custom measure function for the step function. Must accept a single float and return a single float, can pause but will slow down this function. Defaults to the measure function above.
+        threshold (float, optional): Minimum Difference between y_i and y_i+1 for the system to recursively visit the midpoint. Defaults to 0.00001.
+        min_delta (float, optional): Minimum delta between x_i and x_i+1 before the system halts. Defaults to 10**-8.
     """
     if high - low <= min_delta:
         return
-    if low not in measured:
-        yl = measure(low)
-        measured[low] = yl
+    if low not in measured_values:
+        yl = func(low)
+        measured_values[low] = yl
     else:
-        yl = measured[low]
-    if high not in measured:
-        yh = measure(high)
-        measured[high] = yh
+        yl = measured_values[low]
+    if high not in measured_values:
+        yh = func(high)
+        measured_values[high] = yh
     else:
-        yh = measured[high]
+        yh = measured_values[high]
     mp = (low + high)/2
-    if mp not in measured:
-        y = measure(mp)
-        measured[mp] = y
+    if mp not in measured_values:
+        y = func(mp)
+        measured_values[mp] = y
     else:
-        y = measured[mp]
+        y = measured_values[mp]
     if abs(y - yl) > threshold:
-        step(low, mp)
+        step(low, mp, measured_values)
     if abs(y - yh) > threshold:
-        step(mp, high)
-step(low, high)
+        step(mp, high, measured_values)
+    return measured_values
+step(low, high, {}) # Note, stores all values in global measured value...
 
 
 SMU.write('outp off')
