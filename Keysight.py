@@ -2,7 +2,7 @@ import pyvisa
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import modeling
-
+"""
 RM = pyvisa.ResourceManager()
 RM.list_resources()
 SMU = RM.open_resource('USB0::0x0957::0x8B18::MY51143520::INSTR')  #Note: resource name could be different, adjust here.
@@ -19,6 +19,7 @@ SMU.write('form:elem:sens volt, curr')                             #Orders outpu
 values = [0 for i in range(100)]
 SMU.write('outp on')                                               #Turns on the output
 SMU.write('init (@1)')                                             #Triggers current settings
+"""
 
 class Keysight:
     def __init__(self, resource_name: str, initialize_w_def: bool, pyvisaRM):
@@ -47,7 +48,7 @@ class Keysight:
             self.line.write(str(i))
         return self.line.query(query)
         
-
+"""
 def setCurRead(val):
     """Sets the current for the KeysightB22901A. Fetches the resulting voltage and current.
 
@@ -117,11 +118,13 @@ step(low, high, {}) # Note, stores all values in global measured value...
 
 
 SMU.write('outp off')
+"""
 """values = np.array(values)
 np.savetxt('VoltCurrMeas.csv', values,fmt = '%s', delimiter=',', newline = '\n')
 mydata = np.genfromtxt('VoltCurrMeas.csv', delimiter=',')
 voltage = mydata[:,0]
 current = mydata[:,1]
+"""
 """
 print(len(measured))
 voltage = list(measured.keys())
@@ -137,3 +140,4 @@ plt.ylabel('Current (A)')
 plt.title('I-V Curve of Diode at 20 Deg C')
 plt.legend()
 plt.show()
+"""
