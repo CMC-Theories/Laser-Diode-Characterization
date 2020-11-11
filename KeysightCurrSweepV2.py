@@ -19,27 +19,49 @@ SMU.write('form:elem:sens volt, curr')
 values = [0 for i in range(100)]
 SMU.write('outp on')
 SMU.write('init (@1)')
+
+
 def setCurRead(val):
+    """Sets the current for the KeysightB22901A. Fetches the resulting voltage and current.
+
+    Args:
+        val (float): Current (in A) for the driver to send to the laser.
+
+    Returns:
+        string: A string of scientific notation floats for voltage, followed by a comma, followed by current.
+    """
     SMU.write('sour:curr ' + str(val))
     SMU.write('init (@1)')
     return SMU.query('fetc:arr?')
-"""ind = np.linspace(0,2,100)
-iv = ind*ind*ind/4
-for k,v in enumerate(iv):
-    values[k] = setCurRead(v)
-"""
+
+
+# The following is a numerical algorithm that will sample the high and lows, and if it
+#   is too much of a difference in the voltage output, then it will resample the midpoint  
+#   and repeat the process. Yields a fairly smooth curve with a variable amount of points.
 low = 0
 high = 2.0
 measured = {}
 
 def measure(x):
-    # do actual measurement here, instead we are doing sin(x)/(x+.00001)
+    # Read in the voltage,current string, split to just the voltage.
     combS = setCurRead(x).strip()
     combSep = combS.split(',')
     return float(combSep[0])
     
 
 def step(low, high, threshold=0.00001, min_delta = 10**-8):
+    """Recursively samples the low and high points of the system, if
+    the difference between the output is more than the threshold, it will
+    sample the midpoint, and then recurse with the midpoint to the low and high
+    values. Stops the madness when the difference between the points is less
+    than the min_delta.
+
+    Args:
+        low (float): Low x to sample
+        high (float): High x to sample
+        threshold (float, optional): Minimum Difference between y_i and y_i+1 for the system to recursively visit the midpoint . Defaults to 0.00001.
+        min_delta ([type], optional): Minimum delta between x_i and x_i+1 before the system halts. Defaults to 10**-8.
+    """
     if high - low <= min_delta:
         return
     if low not in measured:
