@@ -58,7 +58,6 @@ class Fluke:
             output = output+ self.ser.read(self.ser.in_waiting).decode('utf-8')
             time.sleep(wait_for_timeout)
         return output
-    
     def Close(self):
         self.ser.close()
 
