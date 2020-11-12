@@ -3,14 +3,15 @@
 # XXX: Standalone needs to be converted to python object
 import serial
 import time
-def Merge(dict1, dict2):
-    return(dict2.update(dict1))
 
 class Fluke:
     # NOTE: You need to look up which COM port the fluke 8845A is connected to
     # For mine it was COM4, replace below with it.
     def __init__(self, port: str, baudrate: int, timeout: float, parity: str, stopbits: int, bytesize: int, **kwargs):
-        self.ser = serial.Serial(Merge(kwargs, {'port':port, 'baudrate': baudrate, 'timeout':timeout, 'parity':parity, 'stopbits': stopbits, 'bytesize':bytesize}))
+        self.settings = kwargs
+        self.settings.update({'port':port, 'baudrate': baudrate, 'timeout':timeout, 'parity':parity, 'stopbits': stopbits, 'bytesize':bytesize})
+        print(self.settings)
+        self.ser = serial.Serial(**self.settings)
     
     def SARCommand(self, command,default_wait_time=0.05, ending=b'\r\n', should_halt=False)->str:
         """Sends and recieves data along the RS232 line.
