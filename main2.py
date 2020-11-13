@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 
 RM = pyvisa.ResourceManager()
 print(RM.list_resources())
-settings = {'port': 'COM3', 'baudrate':38400, 'timeout':5, 'parity':serial.PARITY_EVEN, 'stopbits':serial.STOPBITS_TWO, 'bytesize':serial.SEVENBITS}
+settings = {'port': 'COM4', 'baudrate':38400, 'timeout':5, 'parity':serial.PARITY_EVEN, 'stopbits':serial.STOPBITS_TWO, 'bytesize':serial.SEVENBITS}
 fluke = Fluke(**settings)
 
 fluke.SARCommand("*cls") # Clear all errors
@@ -19,9 +19,9 @@ fluke.SARCommand("zero:auto 0") # Turns off autozero
 fluke.SARCommand("trig:sour imm") # Set the trigger to immediate
 fluke.SARCommand("trig:del 0") # Trigger delay is 0 (fast read)
 fluke.SARCommand("trig:coun 1") # Set trigger count to one
-fluke.SARCommand("disp off") # Turns off displace for faster reading
+#fluke.SARCommand("disp off") # Turns off displace for faster reading
 fluke.SARCommand("syst:rem") # Set the system to remote mode
-fluke.SARCommand("samp:coun 5", default_wait_time=0.1) # Set the sample count to 5 (Variance check)
+fluke.SARCommand("samp:coun 2", default_wait_time=0.1) # Set the sample count to 5 (Variance check)
 fluke.SARCommand(":INIT") # Inits the machine
 while "1" not in fluke.SARCommand("*OPC?"): # Check if measurements have been taken
     print("Waiting...")
@@ -80,6 +80,7 @@ def step(low, high, measured_values: dict = {}, func = measure, converter = conv
         y = func(mp)
         measured_values[mp] = y
         y = converter(y)
+        print("Measuring " + str(mp))
     else:
         y = converter(measured_values[mp])
     if abs(y - yl) > threshold:
@@ -89,10 +90,17 @@ def step(low, high, measured_values: dict = {}, func = measure, converter = conv
     return measured_values
 
 
+
+
+
 low = 0
 high= 2.0
-dic = {}
-dic = step(low, high, dic) # Note, stores all values in global measured value...
+
+current = np.linspace(0, 2, num=100)
+dic = {i:measure(i) for i in current}
+
+
+#dic = step(low, high, dic) # Note, stores all values in global measured value...
 
 keysight.SAR(["outp off"],[])
 fluke.Close()
@@ -101,19 +109,20 @@ print("Number of values measured: " + str(len(dic)))
 current = list(dic.keys())
 current.sort()
 voltage = [convert(dic[i]) for i in current]
-def func(x,x0,A,s,off):
-    return off + (A / (np.exp(-s*(x-x0)) + 1))
-popt, pcov = curve_fit(func, current, np.diff(voltage), bounds=(0,[2, 50, 5, 10]))
+#def func(x,x0,A,s,off):
+#    return off + (A / (np.exp(-s*(x-x0)) + 1))
+#popt, pcov = curve_fit(func, current, np.diff(voltage), bounds=(0,[2, 50, 5, 10]))
 
 yerr = [np.std(dic[i]) for i in current]
 
 plt.scatter(current, voltage,  s = 2)
 plt.errorbar(current, voltage, yerr=yerr)
-plt.plot(current, np.diff(voltage))
-plt.plot(current, func(current, *popt), label = 'Curve Fit', color = 'g')
+#plt.plot(current, np.gradient(np.gradient(voltage,current), current))
+#plt.plot(current, func(current, *popt), label = 'Curve Fit', color = 'g')
 plt.ylabel('Voltage (V)')
 plt.xlabel('Current (A)')
 plt.title('I-L Curve of Diode at 20 Deg C')
 plt.legend()
 plt.show()
-
+np.savetxt("current.csv", current, delimiter=",")
+np.savetxt("voltage.csv", voltage, delimiter=",")
