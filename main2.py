@@ -3,7 +3,7 @@ from fluke8845A import *
 import pyvisa
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy import modeling
+from scipy.optimize import curve_fit
 
 
 RM = pyvisa.ResourceManager()
@@ -13,13 +13,13 @@ fluke = Fluke(**settings)
 
 fluke.SARCommand("*cls") # Clear all errors
 fluke.SARCommand("sens:func volt") #sets sensor function to DC volts
-fluke.SARCommand("sens:volt:rang:auto on") #sets voltage range to auto
+fluke.SARCommand("conf:volt:dc 2") # Set DC range to manual at 2 V
 fluke.SARCommand("volt:dc:nplc 0.2") # sets 
 fluke.SARCommand("zero:auto 0") # Turns off autozero
 fluke.SARCommand("trig:sour imm") # Set the trigger to immediate
 fluke.SARCommand("trig:del 0") # Trigger delay is 0 (fast read)
 fluke.SARCommand("trig:coun 1") # Set trigger count to one
-#fluke.SARCommand("disp off") # Turns off displace for faster reading
+fluke.SARCommand("disp off") # Turns off displace for faster reading
 fluke.SARCommand("syst:rem") # Set the system to remote mode
 fluke.SARCommand("samp:coun 5", default_wait_time=0.1) # Set the sample count to 5 (Variance check)
 fluke.SARCommand(":INIT") # Inits the machine
@@ -34,12 +34,19 @@ keysight = Keysight('USB0::0x0957::0x8B18::MY51143520::INSTR', True, RM)
 keysight.SAR(["outp on","init (@1)"],[])
 
 def readFunc(inp):
-    return keysight.SASR(["sour:curr " + str(inp), "init (@1)"],"fetc:arr?")
+    keysight.SAR(["sour:curr " + str(inp), "init (@1)"], [])
+    fluke.SARCommand(":INIT") # Inits the machine
+    while "1" not in fluke.SARCommand("*OPC?"): # Check if measurements have been taken
+        print("Waiting...")
+        time.sleep(0.1)
+    return fluke.SACRCommand(":FETCH?", wait_for_timeout=0.2, default_wait_time=0.2,should_halt=True)
 def measure(inp):
     combS = readFunc(inp).strip()
     combSep = combS.split(',')
-    return float(combSep[0])
-def step(low, high, measured_values: dict = {}, func = measure, threshold=0.001, min_delta = 10**-8):
+    return [float(i) for i in combSep]
+def convert(inp):
+    return sum(inp)/len(inp)
+def step(low, high, measured_values: dict = {}, func = measure, converter = convert, threshold=0.05, min_delta = 10**-8):
     """Recursively samples the low and high points of the system, if
     the difference between the output is more than the threshold, it will
     sample the midpoint, and then recurse with the midpoint to the low and high
@@ -59,23 +66,26 @@ def step(low, high, measured_values: dict = {}, func = measure, threshold=0.001,
     if low not in measured_values:
         yl = func(low)
         measured_values[low] = yl
+        yl = converter(yl)
     else:
-        yl = measured_values[low]
+        yl = converter(measured_values[low])
     if high not in measured_values:
         yh = func(high)
         measured_values[high] = yh
+        yh = converter(yh)
     else:
-        yh = measured_values[high]
+        yh = converter(measured_values[high])
     mp = (low + high)/2
     if mp not in measured_values:
         y = func(mp)
         measured_values[mp] = y
+        y = converter(y)
     else:
-        y = measured_values[mp]
+        y = converter(measured_values[mp])
     if abs(y - yl) > threshold:
-        step(low, mp, measured_values)
+        step(low, mp, measured_values, func, converter, threshold, min_delta)
     if abs(y - yh) > threshold:
-        step(mp, high, measured_values)
+        step(mp, high, measured_values, func, converter, threshold, min_delta)
     return measured_values
 
 
@@ -85,19 +95,24 @@ dic = {}
 dic = step(low, high, dic) # Note, stores all values in global measured value...
 
 keysight.SAR(["outp off"],[])
+fluke.Close()
 
 print("Number of values measured: " + str(len(dic)))
 current = list(dic.keys())
 current.sort()
-voltage = [dic[i] for i in current]
-fitter = modeling.fitting.LevMarLSQFitter()
-model = modeling.models.Gaussian1D()
-fitted_model = fitter(model, voltage, current)
+voltage = [convert(dic[i]) for i in current]
+def func(x,x0,A,s,off):
+    return off + (A / (np.exp(-s*(x-x0)) + 1))
+popt, pcov = curve_fit(func, current, np.diff(voltage), bounds=(0,[2, 50, 5, 10]))
 
-plt.scatter(voltage, current, s = 2)
-plt.plot(voltage, fitted_model(voltage), label = 'Gaussian Fit', color = 'g')
-plt.xlabel('Voltage (V)')
-plt.ylabel('Current (A)')
+yerr = [np.std(dic[i]) for i in current]
+
+plt.scatter(current, voltage,  s = 2)
+plt.errorbar(current, voltage, yerr=yerr)
+plt.plot(current, np.diff(voltage))
+plt.plot(current, func(current, *popt), label = 'Curve Fit', color = 'g')
+plt.ylabel('Voltage (V)')
+plt.xlabel('Current (A)')
 plt.title('I-L Curve of Diode at 20 Deg C')
 plt.legend()
 plt.show()
