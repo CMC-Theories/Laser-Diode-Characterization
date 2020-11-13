@@ -109,6 +109,7 @@ print("Number of values measured: " + str(len(dic)))
 current = list(dic.keys())
 current.sort()
 voltage = [convert(dic[i]) for i in current]
+voltage2 = [dic[i] for i in current]
 #def func(x,x0,A,s,off):
 #    return off + (A / (np.exp(-s*(x-x0)) + 1))
 #popt, pcov = curve_fit(func, current, np.diff(voltage), bounds=(0,[2, 50, 5, 10]))
@@ -126,3 +127,11 @@ plt.legend()
 plt.show()
 np.savetxt("current.csv", current, delimiter=",")
 np.savetxt("voltage.csv", voltage, delimiter=",")
+np.savetxt("voltage_all.csv", voltage2, delimiter=",")
+
+grad =  np.gradient(np.gradient(voltage, current), current)
+plt.plot(current,grad)
+plt.axvline(x = current[np.argmax(grad)], color='black',linestyle= '--')
+plt.xlabel('Current (A)')
+plt.ylabel(r'$Voltage^{(2)}$ (A/V^2)')
+plt.show()
