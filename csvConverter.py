@@ -15,3 +15,4 @@ xx = np.genfromtxt(file_path, skip_header=33, delimiter=';', skip_footer=1)
 xox = path.split(file_path)
 print(xox[0] + "\out"+xox[1])
 np.savetxt(xox[0] + "\out"+xox[1],xx, delimiter="," )
+filedialog.asksaveasfilename

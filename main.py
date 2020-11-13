@@ -63,8 +63,12 @@ def step(low, high, measured_values: dict = {}, func = measure, threshold=0.001,
 
 low = 0
 high= 2.0
-dic = {}
-dic = step(low, high, dic) # Note, stores all values in global measured value...
+
+current = np.linspace(0, 2, num=500)
+dic = {i:measure(i) for i in current}
+
+#dic = {}
+#dic = step(low, high, dic) # Note, stores all values in global measured value...
 
 keysight.SAR(["outp off"],[])
 
@@ -80,7 +84,19 @@ plt.scatter(voltage, current, s = 2)
 plt.plot(voltage, fitted_model(voltage), label = 'Gaussian Fit', color = 'g')
 plt.xlabel('Voltage (V)')
 plt.ylabel('Current (A)')
-plt.title('I-V Curve of Diode at 20 Deg C')
 plt.legend()
-plt.show()
 
+
+
+import tkinter as tk
+from tkinter import filedialog
+import os.path as path
+root = tk.Tk()
+root.withdraw()
+file_path = filedialog.asksaveasfilename()
+xox = path.split(file_path)
+np.savetxt(xox[0] +"/CUR" + xox[1] + ".csv", current, delimiter=",")
+np.savetxt(xox[0] +"/VOL" + xox[1]+ ".csv", voltage, delimiter=",")
+
+plt.savefig(xox[0] + "/Fig" + xox[1] + '.png')
+plt.show()
