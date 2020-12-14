@@ -5,6 +5,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
+import tkinter as tk
+from tkinter import filedialog
+import os.path as path
+root = tk.Tk()
+root.withdraw()
+file_path = filedialog.asksaveasfilename()
+xox = path.split(file_path)
+root.destroy()
+
 
 RM = pyvisa.ResourceManager()
 print(RM.list_resources())
@@ -34,18 +43,17 @@ keysight = Keysight('USB0::0x0957::0x8B18::MY51143520::INSTR', True, RM)
 keysight.SAR(["outp on","init (@1)"],[])
 
 def readFunc(inp):
-    keysight.SAR(["sour:curr " + str(inp), "init (@1)"], [])
+    alpha = keysight.SASR(["sour:curr " + str(inp), "init (@1)"], "fetc:arr?")
     fluke.SARCommand(":INIT") # Inits the machine
     while "1" not in fluke.SARCommand("*OPC?"): # Check if measurements have been taken
         print("Waiting...")
         time.sleep(0.1)
-    return fluke.SACRCommand(":FETCH?", wait_for_timeout=0.2, default_wait_time=0.2,should_halt=True)
+    return (float(alpha.strip().split(',')[0]), fluke.SACRCommand(":FETCH?", wait_for_timeout=0.2, default_wait_time=0.2,should_halt=True).strip().split(','))
 def measure(inp):
-    combS = readFunc(inp).strip()
-    combSep = combS.split(',')
-    return [float(i) for i in combSep]
+    combS = readFunc(inp)
+    return (combS[0], [float(i) for i in combS[1]])
 def convert(inp):
-    return sum(inp)/len(inp)
+    return sum(inp[1])/len(inp[1])
 def step(low, high, measured_values: dict = {}, func = measure, converter = convert, threshold=0.05, min_delta = 10**-8):
     """Recursively samples the low and high points of the system, if
     the difference between the output is more than the threshold, it will
@@ -96,7 +104,7 @@ def step(low, high, measured_values: dict = {}, func = measure, converter = conv
 low = 0
 high= 2.0
 
-current = np.linspace(0, 2, num=100)
+current = np.linspace(0, 2.2, num=250)
 dic = {i:measure(i) for i in current}
 
 
@@ -108,30 +116,38 @@ fluke.Close()
 print("Number of values measured: " + str(len(dic)))
 current = list(dic.keys())
 current.sort()
-voltage = [convert(dic[i]) for i in current]
-voltage2 = [dic[i] for i in current]
+voltageOut = [convert(dic[i]) for i in current]
+voltage2 = [dic[i][1] for i in current]
+voltageIn = [dic[i][0] for i in current]
 #def func(x,x0,A,s,off):
 #    return off + (A / (np.exp(-s*(x-x0)) + 1))
 #popt, pcov = curve_fit(func, current, np.diff(voltage), bounds=(0,[2, 50, 5, 10]))
 
-yerr = [np.std(dic[i]) for i in current]
+yerr = [np.std(dic[i][1]) for i in current]
 
-plt.scatter(current, voltage,  s = 2)
-plt.errorbar(current, voltage, yerr=yerr)
+plt.scatter(current, voltageOut,  s = 2)
+plt.errorbar(current, voltageOut, yerr=yerr)
 #plt.plot(current, np.gradient(np.gradient(voltage,current), current))
 #plt.plot(current, func(current, *popt), label = 'Curve Fit', color = 'g')
 plt.ylabel('Voltage (V)')
 plt.xlabel('Current (A)')
-plt.title('I-L Curve of Diode at 20 Deg C')
+plt.title('I-L Curve of Diode')
 plt.legend()
-plt.show()
-np.savetxt("current.csv", current, delimiter=",")
-np.savetxt("voltage.csv", voltage, delimiter=",")
-np.savetxt("voltage_all.csv", voltage2, delimiter=",")
+plt.savefig(xox[0] + "/Fig_IL_" + xox[1] + ".png")
 
-grad =  np.gradient(np.gradient(voltage, current), current)
+np.savetxt(xox[0] + "/IL_"+xox[1]+".csv", np.transpose(np.vstack(current, voltageOut)), delimiter=",")
+np.savetxt(xox[0] + "/IV_"+xox[1]+".csv", np.transpose(np.vstack(current, voltageIn)), delimiter=",")
+np.savetxt(xox[0] + "/VoltOutAll_"+xox[1]+".csv", voltage2, delimiter=",")
+#np.savetxt(xox[0] + "/CUR"+xox[1]+".csv", current, delimiter=",")
+#np.savetxt(xox[0] + "/VOL" + xox[1] + ".csv", voltage, delimiter=",")
+#np.savetxt(xox[0] + "/VOLALL" + xox[1] + ".csv", voltage2, delimiter=",")
+
+grad =  np.gradient(np.gradient(voltageOut, current), current)
 plt.plot(current,grad)
 plt.axvline(x = current[np.argmax(grad)], color='black',linestyle= '--')
+print(current[np.argmax(grad)])
 plt.xlabel('Current (A)')
 plt.ylabel(r'$Voltage^{(2)}$ (A/V^2)')
+plt.savefig(xox[0] + "/Fig_1_" + xox[1] + ".png")
 plt.show()
+exit()

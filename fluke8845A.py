@@ -1,6 +1,4 @@
 
-
-# XXX: Standalone needs to be converted to python object
 import serial
 import time
 

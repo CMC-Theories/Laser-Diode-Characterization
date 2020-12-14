@@ -4,11 +4,18 @@ import pyvisa
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy import modeling
-
+import tkinter as tk
+from tkinter import filedialog
+import os.path as path
+root = tk.Tk()
+root.withdraw()
+file_path = filedialog.asksaveasfilename()
+xox = path.split(file_path)
+root.destroy()
 
 RM = pyvisa.ResourceManager()
 print(RM.list_resources())
-settings = {'port': 'COM3', 'baudrate':38400, 'timeout':5, 'parity':serial.PARITY_EVEN, 'stopbits':serial.STOPBITS_TWO, 'bytesize':serial.SEVENBITS}
+settings = {'port': 'COM4', 'baudrate':38400, 'timeout':5, 'parity':serial.PARITY_EVEN, 'stopbits':serial.STOPBITS_TWO, 'bytesize':serial.SEVENBITS}
 fluke = Fluke(**settings)
 
 keysight = Keysight('USB0::0x0957::0x8B18::MY51143520::INSTR', True, RM)
@@ -88,15 +95,10 @@ plt.legend()
 
 
 
-import tkinter as tk
-from tkinter import filedialog
-import os.path as path
-root = tk.Tk()
-root.withdraw()
-file_path = filedialog.asksaveasfilename()
-xox = path.split(file_path)
-np.savetxt(xox[0] +"/CUR" + xox[1] + ".csv", current, delimiter=",")
-np.savetxt(xox[0] +"/VOL" + xox[1]+ ".csv", voltage, delimiter=",")
+np.savetxt(xox[0] + "/" + xox[1] + ".csv", np.transpose(np.vstack(current, voltage)), delimiter=",")
+#np.savetxt(xox[0] +"/CUR" + xox[1] + ".csv", current, delimiter=",")
+#np.savetxt(xox[0] +"/VOL" + xox[1]+ ".csv", voltage, delimiter=",")
 
 plt.savefig(xox[0] + "/Fig" + xox[1] + '.png')
 plt.show()
+exit()
